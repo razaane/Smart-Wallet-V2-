@@ -46,6 +46,7 @@ function loginUser($pdo, $email, $password) {
     $stmt = $pdo->prepare("SELECT id, username, email, password, fullname, avatar FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
     
     if ($user && password_verify($password, $user['password'])) {
         // Set session variables

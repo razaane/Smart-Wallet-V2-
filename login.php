@@ -17,7 +17,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($email) || empty($password)) {
         $error = 'Please fill in all fields';
     } else {
-        if (loginUser($pdo, $email, $password)) {
+        // Fetch user from DB by email
+        $stmt = $pdo->prepare("SELECT id, username, email, password, fullname FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($user && password_verify($password, $user['password'])) {
+            // Password is correct, log the user in
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['email'] = $user['email'];
+            $_SESSION['fullname'] = $user['fullname'];
+
+            session_regenerate_id(true);  // Regenerate session ID for security
             header('Location: index.php');
             exit();
         } else {

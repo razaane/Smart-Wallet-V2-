@@ -95,3 +95,12 @@ WHERE id = 1;
 ALTER TABLE users 
 CHANGE full_name fullname VARCHAR(100) NOT NULL;
 SELECT * FROM users;
+
+SELECT password FROM users ;
+
+UPDATE users SET password ='$2y$10$ECQwXB57oGN88K4S/t8.VOJzGuUUniIZSdiGTeGnY2Z3VPYwlqEBm' WHERE email = 'wakhidirazane@gmail.com';
+DESCRIBE users;
+SELECT email, password FROM users WHERE email = 'wakhidirazane@gmail.com';
+SELECT * FROM users ;
+
+SELECT email, password FROM users WHERE email = 'wakhidirazane@gmail.com';
