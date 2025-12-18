@@ -1,42 +1,65 @@
-<?php
-require_once('config.php');
-require_once('auth.php');
+<?php 
+session_start();
+include "config.php"; 
 
-// Redirect if already logged in
-if (isLoggedIn()) {
-    header('Location: index.php');
-    exit();
-}
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
-$error = '';
+require 'vendor/autoload.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = sanitizeInput($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    
-    if (empty($email) || empty($password)) {
-        $error = 'Please fill in all fields';
-    } else {
-        // Fetch user from DB by email
-        $stmt = $pdo->prepare("SELECT id, username, email, password, fullname FROM users WHERE email = ?");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($user && password_verify($password, $user['password'])) {
-            // Password is correct, log the user in
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['email'] = $user['email'];
-            $_SESSION['fullname'] = $user['fullname'];
 
-            session_regenerate_id(true);  // Regenerate session ID for security
-            header('Location: index.php');
-            exit();
-        } else {
-            $error = 'Invalid email or password';
+$message = "";
+
+if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])){
+    $email_input = $_POST['email'];
+    $pass_input = $_POST['password'];
+$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+$stmt ->execute([$email_input]);
+$user = $stmt->fetch();
+if(!$user){
+    $message = "User not found!";
+}else{
+    if(password_verify($pass_input, $user['password'])){
+        $otp = rand(100000,999999);
+        $_SESSION['otp'] = $otp;
+        $_SESSION['otp_email']=$email_input;
+        $_SESSION['otp_time'] = time();
+
+        $mail = new PHPMailer(true);
+
+        try{                    //Enable verbose debug output
+          $mail->isSMTP();                                            //Send using SMTP
+          $mail->Host       = 'smtp.gmail.com';                     //Set the SMTP server to send through
+          $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
+          $mail->Username   = 'wakhidirazane@gmail.com';                     //SMTP username
+          $mail->Password   = 'yipniysyyojnqhiv';                               //SMTP password
+          $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;            //Enable implicit TLS encryption
+          $mail->Port       = 465;                                    //TCP port to connect to; use 587 if you have set `SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS`
+
+          //Recipients
+          $mail->setFrom('wakhidirazane@gmail.com', 'Smart Wallet');
+          $mail->addAddress($email_input);
+
+          //Content
+          $mail->isHTML(true);                                 
+          
+                $mail->Subject = 'Your OTP Code';
+                $mail->Body    = "<b>Your OTP is: $otp</b>";
+                $mail->AltBody = "Your OTP is: $otp";
+
+          $mail->send();
+          header("Location: otp.php");
+          exit;
+
+        }catch(Exception $e){
+          $message = "Failed to send OTP email";
         }
+    }else{
+        $message = "Wrong Password !";
     }
 }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en" class="light">
@@ -79,23 +102,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Login Form -->
     <div class="bg-[color:var(--card-bg)] rounded-2xl p-8 shadow-lg border border-gray-100 dark:border-gray-800">
-      <?php if ($error): ?>
-        <div class="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30">
-          <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-red-600 dark:text-red-400">error</span>
-            <p class="text-sm text-red-600 dark:text-red-400"><?= htmlspecialchars($error) ?></p>
-          </div>
-        </div>
-      <?php endif; ?>
-
       <form method="POST" action="login.php">
         <div class="space-y-4">
+            <?php if (!empty($message)): ?>
+                <div class="mb-4 text-red-600 font-medium">
+                    <?php echo $message ?>;
+                </div>
+            <?php endif;?>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
             <input type="email" name="email" required 
                    class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                   placeholder="your@email.com"
-                   value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
+                   placeholder="your@email.com">
           </div>
 
           <div>
@@ -105,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    placeholder="••••••••">
           </div>
 
-          <button type="submit" 
+          <button type="submit" name ="login"
                   class="w-full py-3 rounded-xl text-white font-semibold hover:opacity-90 transition" 
                   style="background: linear-gradient(90deg, #2563eb, #4f46e5);">
             <span class="flex items-center justify-center gap-2">
