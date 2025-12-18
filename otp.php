@@ -1,4 +1,5 @@
 <?php
+include("config.php");
 session_start();
 
 // Redirect to login if no OTP session exists
