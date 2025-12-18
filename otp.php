@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_otp'])) {
         if ($otp_input == $session_otp) {
             // OTP correct → mark user as logged in
             $_SESSION['logged_in'] = true;
+            $_SESSION['user_id'] = true ;
             $_SESSION['user_email'] = $_SESSION['otp_email'];
 
             // Clear OTP session
